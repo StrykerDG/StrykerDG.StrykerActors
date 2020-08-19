@@ -10,7 +10,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="GitHub\Messages\" />
+    <ProjectReference Include="..\StrykerDG.StrykerServices\StrykerDG.StrykerServices.csproj" />
   </ItemGroup>
 
 </Project>
