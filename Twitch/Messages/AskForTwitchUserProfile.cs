@@ -2,11 +2,11 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace StrykerDG.StrykerActors.GitHub.Messages
+namespace StrykerDG.StrykerActors.Twitch.Messages
 {
-    public class AskForUserProfile
+    public class AskForTwitchUserProfile
     {
-        public AskForUserProfile(string profile)
+        public AskForTwitchUserProfile(string profile)
         {
             Profile = profile;
         }
