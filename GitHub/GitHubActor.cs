@@ -1,4 +1,5 @@
 ﻿using Akka.Actor;
+using Akka.Util.Internal;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using StrykerDG.StrykerActors.GitHub.Messages;
@@ -12,30 +13,46 @@ using System.Text;
 
 namespace StrykerDG.StrykerActors.GitHub
 {
-    public class GitHubActor : ReceiveActor
+    public class GitHubActor : StrykerActor
     {
-        private IServiceScopeFactory ServiceScopeFactory { get; set; }
-
-        public GitHubActor(IServiceScopeFactory factory)
+        public GitHubActor(IServiceScopeFactory factory, TimeSpan duration) : base(factory, duration)
         {
-            ServiceScopeFactory = factory;
-
             Receive<AskForGitHubUserProfile>(GetUserProfile);
         }
 
         private async void GetUserProfile(AskForGitHubUserProfile message)
         {
-            using (var scope = ServiceScopeFactory.CreateScope())
+            Cache.TryGetValue("USER_PROFILE", out var cacheResponse);
+
+            if (
+                cacheResponse == null ||
+                cacheResponse?.Retrieved.Add(ValidDuration) < DateTimeOffset.Now
+            )
             {
-                var service = scope.ServiceProvider.GetServices<IStrykerService>()
-                    .Where(s => s.GetType() == typeof(GitHubService))
-                    .FirstOrDefault();
+                using (var scope = ServiceScopeFactory.CreateScope())
+                {
+                    var service = scope.ServiceProvider.GetServices<IStrykerService>()
+                        .Where(s => s.GetType() == typeof(GitHubService))
+                        .FirstOrDefault();
 
-                var result = await service?.Get($"users/{message.Profile}");
+                    var result = await service?.Get($"users/{message.Profile}");
 
-                var resultObject = JsonConvert.DeserializeObject<GitHubUser>((string)result.Data);
-                Sender.Tell(resultObject);
+                    var resultObject = JsonConvert.DeserializeObject<GitHubUser>((string)result.Data);
+
+                    Cache.AddOrSet(
+                        "USER_PROFILE",
+                        new CacheEntry
+                        {
+                            Retrieved = DateTimeOffset.Now,
+                            Data = resultObject
+                        }
+                    );
+
+                    Sender.Tell(resultObject);
+                }
             }
+            else
+                Sender.Tell(cacheResponse.Data as GitHubUser);
         }
     }
 }
