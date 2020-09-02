@@ -7,8 +7,8 @@ namespace StrykerDG.StrykerActors.Clockify.Messages
     public class AskForTimeEntries
     {
         public AskForTimeEntries(
-            string workspace, 
-            string user, 
+            string workspace = null, 
+            string user = null, 
             Dictionary<string, dynamic> filters = null
         )
         {
